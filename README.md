@@ -4,4 +4,4 @@ Si vous n'arrivez pas à vous débarrasser du message: *"Sorry, something went w
 [Exploration](https://nbviewer.jupyter.org/github/MavielS/classification-biens-de-consommation/blob/master/EDA.ipynb) <br>
 
 <br>
-Vous pouvez ensuite cliquer sur **Open in Colab**.
+Vous pouvez ensuite cliquer sur <b>Open in Colab</b>.
