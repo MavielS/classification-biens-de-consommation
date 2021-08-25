@@ -13,6 +13,7 @@ from datetime import datetime
 import exploration as ex
 
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import adjusted_rand_score, silhouette_score, davies_bouldin_score, calinski_harabasz_score
 
 
 plt.style.use('fivethirtyeight')
