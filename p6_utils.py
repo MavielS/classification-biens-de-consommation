@@ -26,6 +26,8 @@ pd.set_option("display.min_rows", 10)
 pd.set_option("display.max_columns", 50)
 pd.set_option("max_colwidth", 100)
 
+####################################################### NLP ##########################################################
+
 def plot_n_gramms(data, vectorizer = CountVectorizer(), ngram_ranges: list=[(1,1)], titles=['Unigramme BoW']):
     '''
     Somme les poids associés à chacun des mots
@@ -146,6 +148,39 @@ def plot_all_aris_score(vectorized_values_list: list, true_labels, x_value, mode
     
     fig.show()
     
+def plot_all_silhouette_score(vectorized_values_list: list, true_labels, x_value, model, legends, title='Score silhouette VS Occurences minimale d\'un mot'):
+    '''
+    Affiche l'ensemble de mes ARIs score sur le même graphique
+    '''
+    
+    fig = go.Figure()
+
+    for name_ind, data in enumerate(vectorized_values_list):
+        silhouette = []
+        
+        # Calcule l'ARI pour une configuration donnée
+        for ind in range(0,len(data)):
+            X = data[ind]
+            if type(X) != np.ndarray:
+                X = X.toarray()
+            
+            # Centrage et Réduction
+            std_scale = StandardScaler().fit(X)
+            X_scaled = std_scale.transform(X)
+            
+            model.fit(X_scaled)
+            
+            silhouette.append(silhouette_score(X_scaled, model.labels_))
+            
+        # Affiche ce score sur notre figure
+        fig.add_trace(go.Scatter(x=x_value, y=silhouette,
+                    mode='lines+markers',
+                    name=legends[name_ind]))
+    fig.update_layout(title=title, width=2000, height=800, xaxis_title="Occurence mini.", yaxis_title="Score silhouette")
+    
+    fig.show()
+    
+    
     
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -185,3 +220,48 @@ def reduce_variables_with_pca(list_vectorized_values, th, debug=True):
 
         to_return.append(pca.transform(X))
     return to_return
+
+
+###################################################### Computer Vision ########################################################################
+
+import cv2 as cv
+
+def display_thumbnails_from_df(imgs, preproc_func=None,
+                             preproc_params=None, n_rows=1,
+                             figsize=(15,2), fig=None,
+                             li_im_title=None, title=None):
+
+    n_tot = len(imgs)
+    n_cols = (n_tot//n_rows)+((n_tot%n_rows)>0)*1
+    fig = plt.figure(figsize=figsize) if fig is None else fig
+    
+    for ind, img in enumerate(imgs):
+        if preproc_func is not None:
+            img = preproc_func(img, **preproc_params)
+        ax = fig.add_subplot(n_rows,n_cols,ind+1)
+        if len(img.shape)==3:
+            ax.imshow(img)
+            if li_im_title is not None:
+                ax.set_title(li_im_title[ind])
+        else:
+            ax.imshow(img, cmap='Greys_r')
+            if li_im_title is not None:
+                ax.set_title(li_im_title[ind])
+        ax.set_axis_off()
+        if title is not None:
+            plt.suptitle(title, fontweight='bold')
+    plt.show()
+    
+def preproc_image(img, list_preproc_tup):
+
+    new_img = img
+    dict_transf = {'resize': cv.resize,
+                   'gauss_bl': cv.GaussianBlur,
+                   'convert_color': cv.cvtColor,
+                   'equalize' : cv.equalizeHist,
+                   }
+
+    for name, dict_params in list_preproc_tup:
+        new_img = dict_transf[name](new_img, **dict_params)
+
+    return np.array(new_img)

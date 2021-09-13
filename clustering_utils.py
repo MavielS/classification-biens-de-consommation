@@ -7,7 +7,12 @@ from sklearn.metrics import adjusted_rand_score
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import KMeans
 from sklearn.base import clone
+from sklearn.preprocessing import StandardScaler
 from timeit import default_timer as timer
+
+plt.style.use('fivethirtyeight')
+plt.rcParams['figure.figsize'] = (12, 8)
+plt.rcParams['figure.dpi'] = 100
 
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 
@@ -58,9 +63,14 @@ def compute_clust_scores_nclust(model, df, n_iter=10,
         # Iterations of the same model (stability)
         for j in range(n_iter):
             model = KMeans(n_clusters=n_clust)
-            model.fit(df)
             
-            ser_clust = pd.Series(data=model.predict(df),
+            # Centrage et Réduction
+            std_scale = StandardScaler().fit(df)
+            X_scaled = std_scale.transform(df)
+            
+            model.fit(X_scaled)
+            
+            ser_clust = pd.Series(data=model.predict(X_scaled),
                                   index=df.index,
                                   name="iter_"+str(j))
             if return_pop:
@@ -72,9 +82,9 @@ def compute_clust_scores_nclust(model, df, n_iter=10,
                                           axis=1)
         
             # Computing scores for iterations
-            silh.append(silhouette_score(X=df, labels=ser_clust))
-            dav_bould.append(davies_bouldin_score(X=df, labels=ser_clust))
-            cal_harab.append(calinski_harabasz_score(X=df, labels=ser_clust))
+            silh.append(silhouette_score(X=X_scaled, labels=ser_clust))
+            dav_bould.append(davies_bouldin_score(X=X_scaled, labels=ser_clust))
+            cal_harab.append(calinski_harabasz_score(X=X_scaled, labels=ser_clust))
             distor.append(model.inertia_)
 
         if return_pop:
@@ -109,7 +119,7 @@ in a figure with error bars (2 sigmas)'''
         score_mean = [dict_scores_iter[i].mean().loc[n_score] for i in list_n_clust]
         score_std = np.array([dict_scores_iter[i].std().loc[n_score]\
                             for i in list_n_clust])
-        ax.errorbar(list_n_clust, score_mean, yerr=2*score_std, elinewidth=1,
+        ax.errorbar(list_n_clust, score_mean, yerr=score_std, elinewidth=1,
                 capsize=2, capthick=1, ecolor='k', fmt='-o', c=c, ms=5,
                 barsabove=False, uplims=False)
 
@@ -126,7 +136,7 @@ in a figure with error bars (2 sigmas)'''
         score_plot_vs_nb_clust(dict_scores_iter, n_score, ax, c=c)
         ax.set_xlabel('Number of clusters')
         ax.set_title(n_score+' score')
-        ax.grid()
+        ax.grid(True)
 
     fig.suptitle('Clustering score vs. number of clusters',
                 fontsize=14, fontweight='bold')
